@@ -1,0 +1,25 @@
+# Maven build output
+target/
+*.class
+
+# Local data files — never commit binary NetCDF
+data/*.nc
+data/*.nc4
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Eclipse build output
+bin/
