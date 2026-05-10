@@ -19,6 +19,7 @@ import java.nio.file.Paths;
  * routes are intentionally a small subset of ERDDAP's surface area:
  *
  * <ul>
+ *   <li>GET /                              — HTML landing page with clickable examples</li>
  *   <li>GET /datasets                       — list all known floats</li>
  *   <li>GET /info/{floatId}                 — metadata for one float</li>
  *   <li>GET /data/{floatId}.{format}?...    — profile data, JSON or CSV</li>
@@ -50,7 +51,53 @@ public final class App {
             cfg.http.defaultContentType = "application/json";
         });
 
-        app.get("/", ctx -> ctx.json(new RootResponse()));
+        app.get("/", ctx -> {
+            String html = """
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                    <meta charset="UTF-8">
+                    <title>argo-erddap-lite</title>
+                    <style>
+                    body { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+                           max-width: 720px; margin: 2em auto; padding: 0 1em;
+                           color: #222; line-height: 1.55; font-size: 14px; }
+                    h1 { font-size: 1.4em; margin-bottom: 0.2em; }
+                    p  { margin: 0.5em 0; }
+                    ul { padding-left: 0; list-style: none; }
+                    li { margin: 0.7em 0; }
+                    .desc { color: #666; font-size: 0.92em; margin-left: 1.5em; }
+                    a { color: #0a66c2; }
+                    </style>
+                    </head>
+                    <body>
+                    <h1>argo-erddap-lite</h1>
+                    <p>Java HTTP service serving Argo NetCDF data through a REST API.</p>
+
+                    <p>Click any example below to try it in your browser:</p>
+                    <ul>
+                      <li><a href="/datasets">/datasets</a>
+                          <div class="desc">list of WMO float IDs loaded into the service</div></li>
+
+                      <li><a href="/info/5906551">/info/5906551</a>
+                          <div class="desc">metadata for float 5906551 (PI, project, sensors) &mdash; from meta.nc</div></li>
+
+                      <li><a href="/data/5906551.json?cycles=1-3&amp;parameters=TEMP,PSAL,PRES">/data/5906551.json?cycles=1-3&amp;parameters=TEMP,PSAL,PRES</a>
+                          <div class="desc">profile data as JSON: cycles 1-3, three parameters &mdash; from prof.nc</div></li>
+
+                      <li><a href="/data/5906551.csv?cycles=1&amp;parameters=TEMP">/data/5906551.csv?cycles=1&amp;parameters=TEMP</a>
+                          <div class="desc">same as above but CSV</div></li>
+                    </ul>
+
+                    <p style="margin-top:2em; color:#888;">
+                      Source: <a href="https://github.com/youranli001/argo-erddap-lite">github.com/youranli001/argo-erddap-lite</a>
+                    </p>
+                    </body>
+                    </html>
+                    """;
+            ctx.html(html);
+        });
+
         app.get("/datasets", datasets::list);
         app.get("/info/{floatId}", datasets::info);
         app.get("/data/{floatId}.{format}", data::query);
@@ -74,17 +121,6 @@ public final class App {
     private static String envOr(String key, String fallback) {
         String v = System.getenv(key);
         return v == null || v.isBlank() ? fallback : v;
-    }
-
-    /** Tiny payload returned at the root path so users see something sensible. */
-    public record RootResponse(String service, String version, String[] endpoints) {
-        public RootResponse() {
-            this("argo-erddap-lite", "0.1.0", new String[]{
-                    "/datasets",
-                    "/info/{floatId}",
-                    "/data/{floatId}.{format}?cycles=...&parameters=..."
-            });
-        }
     }
 
     public record ErrorResponse(String error, String message) {}
